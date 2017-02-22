@@ -1,4 +1,4 @@
-import { inject, bindable, Container, ViewEngine, bindingMode} from 'aurelia-framework';
+import { inject, bindable, Container, ViewEngine, View, bindingMode} from 'aurelia-framework';
 import { DOM } from 'aurelia-pal';
 
 @inject(Element, Container,  ViewEngine)
@@ -18,6 +18,13 @@ export class PickerCustomAttribute {
   isInputElement() {
     return this.element.nodeType === 1 && this.element.tagName.toLowerCase() == 'input';
   }
+  inElement(e) {
+    let containerRect = this.divElement.getBoundingClientRect();
+    let elementRect = this.element.getBoundingClientRect();
+    let inContainerRect = e.clientX > containerRect.left && e.clientX < containerRect.right && e.clientY > containerRect.top && e.clientY < containerRect.bottom;
+    let inElementRect = e.clientX > elementRect.left && e.clientX < elementRect.right && e.clientY > elementRect.top && e.clientY < elementRect.bottom;
+    return inContainerRect && inElementRect
+  }
   pick(item) {
     this.value = item;
     if (this.isInputElement()) {
@@ -31,17 +38,8 @@ export class PickerCustomAttribute {
     if (!this.isInputElement() && !this.show) {
       this.createPicker();
     }
-    if (this.show) {
-      /*
-        Remove picker if click is outside of it's client rectangle.
-      */
-      let containerRect = this.divElement.getBoundingClientRect();
-      let elementRect = this.element.getBoundingClientRect();
-      let inContainerRect = e.clientX > containerRect.left && e.clientX < containerRect.right && e.clientY > containerRect.top && e.clientY < containerRect.bottom;
-      let inElementRect = e.clientX > elementRect.left && e.clientX < elementRect.right && e.clientY > elementRect.top && e.clientY < elementRect.bottom;
-      if (!inContainerRect && !inElementRect) {
+    if (this.show && !this.inElement(e)) {
         this.removePicker();
-      }
     }
   }
 
@@ -51,7 +49,7 @@ export class PickerCustomAttribute {
     }
     if (e.type === 'blur') {
       if (this.isInputElement() && this.element.value !== this.value && typeof this.value !== "undefined") {
-        this.element.value = this.value
+        this.element.value = this.value;
       }
     }
   }
@@ -60,28 +58,11 @@ export class PickerCustomAttribute {
     this.viewEngine.loadViewFactory('resources/attributes/picker.html').then(factory => {
       const childContainer = this.container.createChild();
       const view = factory.create(childContainer);
+
       view.bind(this);
 
-      this.divElement = <HTMLElement>DOM.createElement('div');
-      view.appendNodesTo(this.divElement);
-
-
-      /*
-      Attaches to the bottom left of the element.
-      */
-      const body = DOM.querySelectorAll('body')[0];
-      const windowHeight = (body as Element).getBoundingClientRect().bottom;
-      const elementRect = this.element.getBoundingClientRect();
-      const left = elementRect.left + window.scrollX;
-      body.insertBefore(this.divElement, body.firstChild);
-      var height = this.divElement.getBoundingClientRect().height;
-      var top = elementRect.top + elementRect.height;
-      top = ((top+height) < window.innerHeight) ? top + window.scrollY : (elementRect.top - height + window.scrollY);
-
-      this.divElement.style.top = top + 'px';
-      this.divElement.style.left = left + 'px';
-      this.divElement.style.position = 'absolute';
-      this.divElement.style.zIndex = '2001';
+      this.createElement(view)
+      this.setPosition()
 
       if (this.isInputElement)
         document.addEventListener('mouseup', this.mouseupListener);
@@ -90,6 +71,7 @@ export class PickerCustomAttribute {
     })
 
   }
+
   removePicker() {
     const body = DOM.querySelectorAll('body')[0];
     body.removeChild(this.divElement);
@@ -100,6 +82,29 @@ export class PickerCustomAttribute {
     this.show = false;
 
   }
+
+  createElement(view: View) {
+    const body = DOM.querySelectorAll('body')[0];
+
+    this.divElement = <HTMLElement>DOM.createElement('div');
+    view.appendNodesTo(this.divElement);
+    body.insertBefore(this.divElement, body.firstChild);
+  }
+
+  setPosition() {
+    const elementRect = this.element.getBoundingClientRect();
+    const left = elementRect.left + window.scrollX;
+    const height = this.divElement.getBoundingClientRect().height;
+    var top = elementRect.top + elementRect.height;
+
+    top = ((top+height) < window.innerHeight) ? top + window.scrollY : (elementRect.top - height + window.scrollY);
+
+    this.divElement.style.top = top + 'px';
+    this.divElement.style.left = left + 'px';
+    this.divElement.style.position = 'absolute';
+    this.divElement.style.zIndex = '2001';
+  }
+
   attached() {
     if (this.isInputElement()) {
       this.element.addEventListener('focus', this.focusListener);
@@ -108,9 +113,7 @@ export class PickerCustomAttribute {
       this.element.addEventListener('click', this.mouseupListener);
     }
   }
-  /**
-  * Destroys event listeners.
-  */
+
   detached() {
     if (this.isInputElement) {
       this.element.removeEventListener('focus', this.focusListener);

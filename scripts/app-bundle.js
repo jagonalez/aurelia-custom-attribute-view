@@ -108,6 +108,13 @@ define('resources/attributes/picker',["require", "exports", "aurelia-framework",
         PickerCustomAttribute.prototype.isInputElement = function () {
             return this.element.nodeType === 1 && this.element.tagName.toLowerCase() == 'input';
         };
+        PickerCustomAttribute.prototype.inElement = function (e) {
+            var containerRect = this.divElement.getBoundingClientRect();
+            var elementRect = this.element.getBoundingClientRect();
+            var inContainerRect = e.clientX > containerRect.left && e.clientX < containerRect.right && e.clientY > containerRect.top && e.clientY < containerRect.bottom;
+            var inElementRect = e.clientX > elementRect.left && e.clientX < elementRect.right && e.clientY > elementRect.top && e.clientY < elementRect.bottom;
+            return inContainerRect && inElementRect;
+        };
         PickerCustomAttribute.prototype.pick = function (item) {
             this.value = item;
             if (this.isInputElement()) {
@@ -119,14 +126,8 @@ define('resources/attributes/picker',["require", "exports", "aurelia-framework",
             if (!this.isInputElement() && !this.show) {
                 this.createPicker();
             }
-            if (this.show) {
-                var containerRect = this.divElement.getBoundingClientRect();
-                var elementRect = this.element.getBoundingClientRect();
-                var inContainerRect = e.clientX > containerRect.left && e.clientX < containerRect.right && e.clientY > containerRect.top && e.clientY < containerRect.bottom;
-                var inElementRect = e.clientX > elementRect.left && e.clientX < elementRect.right && e.clientY > elementRect.top && e.clientY < elementRect.bottom;
-                if (!inContainerRect && !inElementRect) {
-                    this.removePicker();
-                }
+            if (this.show && !this.inElement(e)) {
+                this.removePicker();
             }
         };
         PickerCustomAttribute.prototype.handleFocus = function (e) {
@@ -145,20 +146,8 @@ define('resources/attributes/picker',["require", "exports", "aurelia-framework",
                 var childContainer = _this.container.createChild();
                 var view = factory.create(childContainer);
                 view.bind(_this);
-                _this.divElement = aurelia_pal_1.DOM.createElement('div');
-                view.appendNodesTo(_this.divElement);
-                var body = aurelia_pal_1.DOM.querySelectorAll('body')[0];
-                var windowHeight = body.getBoundingClientRect().bottom;
-                var elementRect = _this.element.getBoundingClientRect();
-                var left = elementRect.left + window.scrollX;
-                body.insertBefore(_this.divElement, body.firstChild);
-                var height = _this.divElement.getBoundingClientRect().height;
-                var top = elementRect.top + elementRect.height;
-                top = ((top + height) < window.innerHeight) ? top + window.scrollY : (elementRect.top - height + window.scrollY);
-                _this.divElement.style.top = top + 'px';
-                _this.divElement.style.left = left + 'px';
-                _this.divElement.style.position = 'absolute';
-                _this.divElement.style.zIndex = '2001';
+                _this.createElement(view);
+                _this.setPosition();
                 if (_this.isInputElement)
                     document.addEventListener('mouseup', _this.mouseupListener);
                 _this.show = true;
@@ -170,6 +159,23 @@ define('resources/attributes/picker',["require", "exports", "aurelia-framework",
             if (this.isInputElement)
                 document.removeEventListener('mouseup', this.mouseupListener);
             this.show = false;
+        };
+        PickerCustomAttribute.prototype.createElement = function (view) {
+            var body = aurelia_pal_1.DOM.querySelectorAll('body')[0];
+            this.divElement = aurelia_pal_1.DOM.createElement('div');
+            view.appendNodesTo(this.divElement);
+            body.insertBefore(this.divElement, body.firstChild);
+        };
+        PickerCustomAttribute.prototype.setPosition = function () {
+            var elementRect = this.element.getBoundingClientRect();
+            var left = elementRect.left + window.scrollX;
+            var height = this.divElement.getBoundingClientRect().height;
+            var top = elementRect.top + elementRect.height;
+            top = ((top + height) < window.innerHeight) ? top + window.scrollY : (elementRect.top - height + window.scrollY);
+            this.divElement.style.top = top + 'px';
+            this.divElement.style.left = left + 'px';
+            this.divElement.style.position = 'absolute';
+            this.divElement.style.zIndex = '2001';
         };
         PickerCustomAttribute.prototype.attached = function () {
             if (this.isInputElement()) {
