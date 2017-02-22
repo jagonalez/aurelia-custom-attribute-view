@@ -33,7 +33,7 @@ export class PickerCustomAttribute {
     }
     document.removeEventListener('mouseup', this.mouseupListener);
   }
-
+  
   pick(item) {
     this.value = item;
     if (this.isInputElement()) {
@@ -48,8 +48,17 @@ export class PickerCustomAttribute {
     if (!this.isInputElement() && !this.show) {
       this.createPicker();
     }
-    if (this.show && !this.inElement(e)) {
+    if (this.show) {
+      /*
+        Remove picker if click is outside of it's client rectangle.
+      */
+      let containerRect = this.divElement.getBoundingClientRect();
+      let elementRect = this.element.getBoundingClientRect();
+      let inContainerRect = e.clientX > containerRect.left && e.clientX < containerRect.right && e.clientY > containerRect.top && e.clientY < containerRect.bottom;
+      let inElementRect = e.clientX > elementRect.left && e.clientX < elementRect.right && e.clientY > elementRect.top && e.clientY < elementRect.bottom;
+      if (!inContainerRect && !inElementRect) {
         this.removePicker();
+      }
     }
   }
 
@@ -59,20 +68,22 @@ export class PickerCustomAttribute {
     }
     if (e.type === 'blur') {
       if (this.isInputElement() && this.element.value !== this.value && typeof this.value !== "undefined") {
-        this.element.value = this.value;
+        this.element.value = this.value
       }
     }
+  }
+
+  isInputElement() {
+    return this.element.nodeType === 1 && this.element.tagName.toLowerCase() == 'input';
   }
 
   createPicker() {
     this.viewEngine.loadViewFactory('resources/attributes/picker.html').then(factory => {
       const childContainer = this.container.createChild();
       const view = factory.create(childContainer);
-
       view.bind(this);
 
-      this.createElement(view)
-      this.setPosition()
+      this.addElement(view)
 
       if (this.isInputElement)
         document.addEventListener('mouseup', this.mouseupListener);
@@ -93,27 +104,13 @@ export class PickerCustomAttribute {
 
   }
 
-  isInputElement() {
-    return this.element.nodeType === 1 && this.element.tagName.toLowerCase() == 'input';
-  }
-  
-  inElement(e) {
-    let containerRect = this.divElement.getBoundingClientRect();
-    let elementRect = this.element.getBoundingClientRect();
-    let inContainerRect = e.clientX > containerRect.left && e.clientX < containerRect.right && e.clientY > containerRect.top && e.clientY < containerRect.bottom;
-    let inElementRect = e.clientX > elementRect.left && e.clientX < elementRect.right && e.clientY > elementRect.top && e.clientY < elementRect.bottom;
-    return inContainerRect && inElementRect
-  }
-
-  createElement(view: View) {
+  addElement(view: View) {
     const body = DOM.querySelectorAll('body')[0];
 
     this.divElement = <HTMLElement>DOM.createElement('div');
     view.appendNodesTo(this.divElement);
-    body.insertBefore(this.divElement, body.firstChild);
-  }
 
-  setPosition() {
+
     const elementRect = this.element.getBoundingClientRect();
     const left = elementRect.left + window.scrollX;
     const height = this.divElement.getBoundingClientRect().height;
@@ -125,5 +122,9 @@ export class PickerCustomAttribute {
     this.divElement.style.left = left + 'px';
     this.divElement.style.position = 'absolute';
     this.divElement.style.zIndex = '2001';
+
+    body.insertBefore(this.divElement, body.firstChild);
   }
+
+
 }
