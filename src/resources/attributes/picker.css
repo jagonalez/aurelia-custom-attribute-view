@@ -1,0 +1,18 @@
+.picker {
+  background-color: #fff;
+  box-shadow: 0px 0px 10px 2px rgba(40,40,40,0.25);
+  border: 1px solid #e4e4e4;
+}
+.picker > ul {
+  list-style: none;
+  margin: 0px;
+  padding: 0px;
+}
+.picker > ul > li {
+  line-height: 1.5em;
+  cursor: pointer;
+  padding: 0.5em
+}
+.picker > ul > li:hover, .picker > ul > li.active {
+  background: #c7c7c7;
+}

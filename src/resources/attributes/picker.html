@@ -1,0 +1,8 @@
+<template>
+  <require from="./picker.css"></require>
+  <div class="picker">
+    <ul>
+      <li repeat.for="item of items" click.trigger="pick(item)" class="${value === item ? 'active' : ''}">${item}</li>
+    </ul>
+  </div>
+</template>
