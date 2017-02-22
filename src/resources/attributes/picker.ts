@@ -15,16 +15,25 @@ export class PickerCustomAttribute {
     this.focusListener = e => this.handleFocus(e);
   }
 
-  isInputElement() {
-    return this.element.nodeType === 1 && this.element.tagName.toLowerCase() == 'input';
+  attached() {
+    if (this.isInputElement()) {
+      this.element.addEventListener('focus', this.focusListener);
+      this.element.addEventListener('blur', this.focusListener);
+    } else {
+      this.element.addEventListener('click', this.mouseupListener);
+    }
   }
-  inElement(e) {
-    let containerRect = this.divElement.getBoundingClientRect();
-    let elementRect = this.element.getBoundingClientRect();
-    let inContainerRect = e.clientX > containerRect.left && e.clientX < containerRect.right && e.clientY > containerRect.top && e.clientY < containerRect.bottom;
-    let inElementRect = e.clientX > elementRect.left && e.clientX < elementRect.right && e.clientY > elementRect.top && e.clientY < elementRect.bottom;
-    return inContainerRect && inElementRect
+
+  detached() {
+    if (this.isInputElement) {
+      this.element.removeEventListener('focus', this.focusListener);
+      this.element.removeEventListener('blur', this.focusListener);
+    } else {
+      this.element.removeEventListner('click', this.mouseupListener);
+    }
+    document.removeEventListener('mouseup', this.mouseupListener);
   }
+
   pick(item) {
     this.value = item;
     if (this.isInputElement()) {
@@ -34,6 +43,7 @@ export class PickerCustomAttribute {
 
     this.removePicker();
   }
+
   handleMouseUp(e) {
     if (!this.isInputElement() && !this.show) {
       this.createPicker();
@@ -83,6 +93,18 @@ export class PickerCustomAttribute {
 
   }
 
+  isInputElement() {
+    return this.element.nodeType === 1 && this.element.tagName.toLowerCase() == 'input';
+  }
+  
+  inElement(e) {
+    let containerRect = this.divElement.getBoundingClientRect();
+    let elementRect = this.element.getBoundingClientRect();
+    let inContainerRect = e.clientX > containerRect.left && e.clientX < containerRect.right && e.clientY > containerRect.top && e.clientY < containerRect.bottom;
+    let inElementRect = e.clientX > elementRect.left && e.clientX < elementRect.right && e.clientY > elementRect.top && e.clientY < elementRect.bottom;
+    return inContainerRect && inElementRect
+  }
+
   createElement(view: View) {
     const body = DOM.querySelectorAll('body')[0];
 
@@ -103,24 +125,5 @@ export class PickerCustomAttribute {
     this.divElement.style.left = left + 'px';
     this.divElement.style.position = 'absolute';
     this.divElement.style.zIndex = '2001';
-  }
-
-  attached() {
-    if (this.isInputElement()) {
-      this.element.addEventListener('focus', this.focusListener);
-      this.element.addEventListener('blur', this.focusListener);
-    } else {
-      this.element.addEventListener('click', this.mouseupListener);
-    }
-  }
-
-  detached() {
-    if (this.isInputElement) {
-      this.element.removeEventListener('focus', this.focusListener);
-      this.element.removeEventListener('blur', this.focusListener);
-    } else {
-      this.element.removeEventListner('click', this.mouseupListener);
-    }
-    document.removeEventListener('mouseup', this.mouseupListener);
   }
 }
